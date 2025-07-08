@@ -12,6 +12,7 @@
   "dependencies": {
     "@langchain/community": "^0.3.48",
     "@langchain/core": "^0.3.62",
+    "@langchain/google-genai": "^0.2.14",
     "@upstash/qstash": "^2.8.1",
     "@upstash/semantic-cache": "^1.0.5",
     "@upstash/vector": "^1.2.2",

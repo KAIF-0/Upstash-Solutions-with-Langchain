@@ -3,6 +3,7 @@ import { client, store } from "./config/redis";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { index } from "./config/vector";
 import { client as QStashClient } from "./config/qstash";
+import { model } from "./config/gemini";
 
 const messages = [
   { role: "user", content: "Hello" },
@@ -60,18 +61,25 @@ const server = serve({
       response = "Documents upserted in Vectore STore!";
     }
 
-    if (pathname == "/query") {
+    if (pathname == "/response") {
       const question = "What is Langchain?";
 
-      response = await index.query(
+      const retriever = await index.query(
         {
           data: question,
           topK: 1,
+          includeData: true,
         },
         {
           namespace: "user2",
         }
       );
+
+      const relevantData = retriever.map((data) => data.data);
+
+      const query = `Answer : ${question} with context to context ${relevantData}`;
+
+      response = (await model.invoke(query)).content;
     }
 
     if (pathname == "/store") {
