@@ -4,6 +4,9 @@ import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { index } from "./config/vector";
 import { client as QStashClient } from "./config/qstash";
 import { model } from "./config/gemini";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { ConversationSummaryMemory } from "langchain/memory";
+import { RunnableSequence } from "@langchain/core/runnables";
 
 const messages = [
   { role: "user", content: "Hello" },
@@ -64,7 +67,7 @@ const server = serve({
     if (pathname == "/response") {
       const question = "What is Langchain?";
 
-      const retriever = await index.query(
+      const retrievedData = await index.query(
         {
           data: question,
           topK: 1,
@@ -75,11 +78,26 @@ const server = serve({
         }
       );
 
-      const relevantData = retriever.map((data) => data.data);
+      const relevantData = retrievedData.map((data) => data.data);
 
-      const query = `Answer : ${question} with context to context ${relevantData}`;
+      // const query = `Answer : ${question} with context to context ${relevantData}`;
 
-      response = (await model.invoke(query)).content;
+      // // direct model invokation
+      // const res = (await model.invoke(query)).content;
+
+      const prompt = PromptTemplate.fromTemplate(`
+        Answer the user query {question} in relative to the Context: {relevantData}
+        `);
+
+      // chaining invokation (runnable sequences)
+      const chain = RunnableSequence.from([prompt, model]);
+
+      response = (
+        await chain.invoke({
+          question,
+          relevantData,
+        })
+      ).text;
     }
 
     if (pathname == "/store") {
